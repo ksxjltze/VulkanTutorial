@@ -188,7 +188,7 @@ private:
             std::cout << '\t' << requiredExtensions[i] << '\n';
         }
 
-        verifyExtensions(extensions, requiredExtensions.data(), requiredExtensions.size());
+        verifyExtensions(extensions, requiredExtensions.data(), static_cast<uint32_t>(requiredExtensions.size()));
     }
 
     bool verifyExtensions(const std::vector<VkExtensionProperties>& extensions, const char** requiredList, uint32_t requiredCount)
@@ -230,6 +230,44 @@ private:
     {
         createInstance();
         setupDebugMessenger();
+        pickPhysicalDevice();
+    }
+
+    bool isDeviceSuitable(VkPhysicalDevice device) 
+    {
+        VkPhysicalDeviceProperties deviceProperties;
+        VkPhysicalDeviceFeatures deviceFeatures;
+
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+        if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+            return true;
+        return false;
+    }
+
+    void pickPhysicalDevice() //pick first suitable GPU
+    {
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+        if (deviceCount == 0)
+            throw std::runtime_error("failed to find GPUs with Vulkan support!");
+
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+        for (const auto& device : devices)
+        {
+            if (isDeviceSuitable(device))
+            {
+                physicalDevice = device;
+                break;
+            }
+        }
+
+        if (physicalDevice == VK_NULL_HANDLE)
+            throw std::runtime_error("failed to find a suitable GPU!");
     }
 
     void setupDebugMessenger() 
@@ -269,6 +307,7 @@ private:
     GLFWwindow* window = nullptr;
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 };
 
 int main() {
