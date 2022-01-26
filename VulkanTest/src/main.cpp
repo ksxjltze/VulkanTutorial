@@ -1,5 +1,8 @@
+#define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
 
 #include <iostream>
 #include <stdexcept>
@@ -231,8 +234,16 @@ private:
     {
         createInstance();
         setupDebugMessenger();
+        createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
+    }
+
+    void createSurface()
+    {
+        if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create window surface!");
+        }
     }
 
     bool isDeviceSuitable(VkPhysicalDevice device) 
@@ -379,8 +390,9 @@ private:
         if (enableValidationLayers)
             DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
 
-        vkDestroyInstance(instance, nullptr);
+        vkDestroySurfaceKHR(instance, surface, nullptr);
         vkDestroyDevice(device, nullptr);
+        vkDestroyInstance(instance, nullptr);
 
         glfwDestroyWindow(window);
         glfwTerminate();
@@ -392,6 +404,7 @@ private:
     VkQueue graphicsQueue;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    VkSurfaceKHR surface;
 };
 
 int main() {
